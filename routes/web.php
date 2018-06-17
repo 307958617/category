@@ -14,3 +14,10 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
+Route::get('category/getCategories','CategoryController@getCategories');
+Route::post('category/addCategory','CategoryController@addCategory');
+Route::resource('category','CategoryController');
