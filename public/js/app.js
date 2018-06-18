@@ -14054,6 +14054,7 @@ window.Vue = __webpack_require__(38);
 Vue.component('example-component', __webpack_require__(41));
 Vue.component('category-component', __webpack_require__(44));
 Vue.component('category-tree', __webpack_require__(12));
+Vue.component('category-model', __webpack_require__(58));
 
 var app = new Vue({
   el: '#app'
@@ -47514,6 +47515,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
 
  //引入子组件
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -47592,7 +47595,7 @@ exports = module.exports = __webpack_require__(48)(false);
 
 
 // module
-exports.push([module.i, "\n.list-group-item {\n  height: 3em;\n  border-left: 3px solid #ff9b44;\n}\n.child-group {\n  margin-left: 4em;\n}\n.child-group li.list-group-item {\n    border-left-color: #e3ff60;\n}\n", ""]);
+exports.push([module.i, "\n.list-group-item {\n  height: 5em;\n  border-left: 3px solid #ff9b44;\n}\n.child-group {\n  margin-left: 4em;\n}\n.child-group li.list-group-item {\n    border-left-color: #e3ff60;\n}\n", ""]);
 
 // exports
 
@@ -47946,6 +47949,29 @@ module.exports = function listToStyles (parentId, list) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__CategoryModel_vue__ = __webpack_require__(58);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__CategoryModel_vue___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__CategoryModel_vue__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -47975,8 +48001,80 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 
+ //引入模态框
 /* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['category']
+    components: {
+        'category-model': __WEBPACK_IMPORTED_MODULE_0__CategoryModel_vue___default.a
+    },
+    props: ['category'],
+    data: function data() {
+        return {
+            newCategory: '', //给新增的输入框绑定的
+            editCategory: this.category.name, //给编辑的输入框绑定的
+            showOptions: false, //用来判断是否显示按钮组
+            showModel: false, //用来判断是否显示模态框
+            modal: { //定义模态框需要的数据
+                headerDescription: '', //表示模态框头部显示的信息
+                vModel: '', //表示模态框的绑定数据是什么
+                method: '' // 表示模态框里面的提交数据的方法是什么
+            }
+        };
+    },
+
+    methods: {
+        addChildCategory: function addChildCategory() {
+            var _this = this;
+
+            //提交新添加的分类到数据
+            //这需要创建新的路由，并创建新的方法用来保存新的子分类
+            axios.post('/category/addChildCategory', { parentId: this.category.id, name: this.newCategory }).then(function (res) {
+                _this.newCategory = '';
+                _this.showModel = false;
+                //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
+                //<category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
+                _this.getCategories();
+            }).catch(function (error) {
+                throw error;
+            });
+        },
+        updateCategory: function updateCategory() {
+            var _this2 = this;
+
+            //这里使用资源路由即可注意是put方法对编辑应控制器里面的update方法即可
+            axios.put('/category/' + this.category.id, { name: this.editCategory }).then(function (res) {
+                _this2.editCategory = _this2.category.name;
+                _this2.showModel = false;
+                //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
+                _this2.getCategories();
+            }).catch(function (error) {
+                throw error;
+            });
+        },
+        getCategories: function getCategories() {
+            //必须增加这个方法与父组件的名称一样这很重要，本组件递归调用才不会报错
+            this.$emit('getCategories');
+        },
+        openModel: function openModel(type) {
+            this.showModel = true; //每次都要显示出模态框
+            switch (type) {
+                case 'add':
+                    this.modal = {
+                        headerDescription: '增加子分类',
+                        vModel: 'newCategory',
+                        method: 'addChildCategory'
+                    };
+                    break;
+                case 'edit':
+                    this.modal = {
+                        headerDescription: '修改分类名称',
+                        vModel: 'editCategory',
+                        method: 'updateCategory'
+                    };
+                    break;
+                default:
+            }
+        }
+    }
 });
 
 /***/ }),
@@ -47987,28 +48085,177 @@ var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", [
-    _c("li", { staticClass: "list-group-item" }, [
-      _c("h6", [_vm._v(_vm._s(_vm.category.name))]),
+  return _c(
+    "div",
+    [
+      _c(
+        "li",
+        {
+          staticClass: "list-group-item",
+          on: {
+            mouseover: function($event) {
+              _vm.showOptions = true
+            },
+            mouseleave: function($event) {
+              _vm.showOptions = false
+            }
+          }
+        },
+        [
+          _c("h6", [_vm._v(_vm._s(_vm.category.name))]),
+          _vm._v(" "),
+          _vm.showOptions
+            ? _c("div", { staticClass: "btn-group btn-group-sm" }, [
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-success",
+                    attrs: { type: "button" },
+                    on: {
+                      click: function($event) {
+                        _vm.openModel("add")
+                      }
+                    }
+                  },
+                  [_vm._v("增加子类")]
+                ),
+                _vm._v(" "),
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-primary",
+                    attrs: { type: "button" },
+                    on: {
+                      click: function($event) {
+                        _vm.openModel("edit")
+                      }
+                    }
+                  },
+                  [_vm._v("编辑分类")]
+                )
+              ])
+            : _vm._e()
+        ]
+      ),
       _vm._v(" "),
       _c(
-        "button",
-        { staticClass: "btn btn-default btn-sm", attrs: { type: "button" } },
-        [_vm._v("新增子类")]
-      )
-    ]),
-    _vm._v(" "),
-    _c(
-      "ul",
-      { staticClass: "list-group child-group" },
-      _vm._l(_vm.category.children, function(category) {
-        return _c("category-tree", {
-          key: category.id,
-          attrs: { category: category }
+        "ul",
+        { staticClass: "list-group child-group" },
+        _vm._l(_vm.category.children, function(category) {
+          return _c("category-tree", {
+            key: category.id,
+            attrs: { category: category },
+            on: { getCategories: _vm.getCategories }
+          })
         })
-      })
-    )
-  ])
+      ),
+      _vm._v(" "),
+      _vm.showModel
+        ? _c("category-model", [
+            _c("h3", { attrs: { slot: "header" }, slot: "header" }, [
+              _vm._v(
+                '给"' +
+                  _vm._s(_vm.category.name) +
+                  '"' +
+                  _vm._s(_vm.modal.headerDescription)
+              )
+            ]),
+            _vm._v(" "),
+            _vm.modal.vModel === "newCategory"
+              ? _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.newCategory,
+                      expression: "newCategory"
+                    }
+                  ],
+                  staticClass: "form-control",
+                  attrs: { slot: "body", type: "text" },
+                  domProps: { value: _vm.newCategory },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.newCategory = $event.target.value
+                    }
+                  },
+                  slot: "body"
+                })
+              : _vm._e(),
+            _vm._v(" "),
+            _vm.modal.method === "addChildCategory"
+              ? _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-sm btn-success",
+                    attrs: { slot: "footer" },
+                    on: { click: _vm.addChildCategory },
+                    slot: "footer"
+                  },
+                  [_vm._v("保存")]
+                )
+              : _vm._e(),
+            _vm._v(" "),
+            _vm.modal.vModel === "editCategory"
+              ? _c("input", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.editCategory,
+                      expression: "editCategory"
+                    }
+                  ],
+                  staticClass: "form-control",
+                  attrs: { slot: "body", type: "text" },
+                  domProps: { value: _vm.editCategory },
+                  on: {
+                    input: function($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.editCategory = $event.target.value
+                    }
+                  },
+                  slot: "body"
+                })
+              : _vm._e(),
+            _vm._v(" "),
+            _vm.modal.method === "updateCategory"
+              ? _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-sm btn-success",
+                    attrs: { slot: "footer" },
+                    on: { click: _vm.updateCategory },
+                    slot: "footer"
+                  },
+                  [_vm._v("保存")]
+                )
+              : _vm._e(),
+            _vm._v(" "),
+            _c(
+              "button",
+              {
+                staticClass: "btn btn-sm btn-default",
+                attrs: { slot: "footer" },
+                on: {
+                  click: function($event) {
+                    _vm.showModel = false
+                  }
+                },
+                slot: "footer"
+              },
+              [_vm._v("取消")]
+            )
+          ])
+        : _vm._e()
+    ],
+    1
+  )
 }
 var staticRenderFns = []
 render._withStripped = true
@@ -48066,8 +48313,10 @@ var render = function() {
               }
             }),
             _vm._v(" "),
-            _c("button", { staticClass: "btn btn-success btn-sm" }, [
-              _vm._v("是最小的吗")
+            _c("br"),
+            _vm._v(" "),
+            _c("button", { staticClass: "btn btn-success btn-block" }, [
+              _vm._v("更新设置")
             ])
           ])
         ])
@@ -48084,7 +48333,8 @@ var render = function() {
               _vm._l(_vm.categories, function(category) {
                 return _c("category-tree", {
                   key: category.id,
-                  attrs: { category: category }
+                  attrs: { category: category },
+                  on: { getCategories: _vm.getCategories }
                 })
               })
             )
@@ -48109,6 +48359,284 @@ if (false) {
 /***/ (function(module, exports) {
 
 // removed by extract-text-webpack-plugin
+
+/***/ }),
+/* 55 */,
+/* 56 */,
+/* 57 */,
+/* 58 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(59)
+}
+var normalizeComponent = __webpack_require__(3)
+/* script */
+var __vue_script__ = __webpack_require__(61)
+/* template */
+var __vue_template__ = __webpack_require__(62)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = null
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources\\assets\\js\\components\\categories\\CategoryModel.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-6c5acdc2", Component.options)
+  } else {
+    hotAPI.reload("data-v-6c5acdc2", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 59 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(60);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(49)("bed3d602", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6c5acdc2\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./CategoryModel.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6c5acdc2\",\"scoped\":false,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./CategoryModel.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 60 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(48)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.modal-mask {\n    position: fixed;\n    z-index: 9998;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    background-color: rgba(0, 0, 0, .5);\n    display: table;\n    -webkit-transition: opacity .3s ease;\n    transition: opacity .3s ease;\n}\n.modal-wrapper {\n    display: table-cell;\n    vertical-align: middle;\n}\n.modal-container {\n    width: 300px;\n    margin: 0px auto;\n    padding: 20px 30px;\n    background-color: #fff;\n    border-radius: 2px;\n    -webkit-box-shadow: 0 2px 8px rgba(0, 0, 0, .33);\n            box-shadow: 0 2px 8px rgba(0, 0, 0, .33);\n    -webkit-transition: all .3s ease;\n    transition: all .3s ease;\n    font-family: Helvetica, Arial, sans-serif;\n}\n.modal-header h3 {\n    margin-top: 0;\n    color: #42b983;\n}\n.modal-body {\n    margin: 20px 0;\n}\n.modal-default-button {\n    float: right;\n}\n\n/*\n * The following styles are auto-applied to elements with\n * transition=\"modal\" when their visibility is toggled\n * by Vue.js.\n *\n * You can easily play with the modal transition by editing\n * these styles.\n */\n.modal-enter {\n    opacity: 0;\n}\n.modal-leave-active {\n    opacity: 0;\n}\n.modal-enter .modal-container,\n.modal-leave-active .modal-container {\n    -webkit-transform: scale(1.1);\n    transform: scale(1.1);\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 61 */
+/***/ (function(module, exports) {
+
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/***/ }),
+/* 62 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("transition", { attrs: { name: "modal" } }, [
+    _c("div", { staticClass: "modal-mask" }, [
+      _c("div", { staticClass: "modal-wrapper" }, [
+        _c("div", { staticClass: "modal-container" }, [
+          _c(
+            "div",
+            { staticClass: "modal-header" },
+            [
+              _vm._t("header", [
+                _vm._v(
+                  "\n                        default header\n                      "
+                )
+              ])
+            ],
+            2
+          ),
+          _vm._v(" "),
+          _c(
+            "div",
+            { staticClass: "modal-body" },
+            [
+              _vm._t("body", [
+                _vm._v(
+                  "\n                        default body\n                      "
+                )
+              ])
+            ],
+            2
+          ),
+          _vm._v(" "),
+          _c(
+            "div",
+            { staticClass: "modal-footer" },
+            [
+              _vm._t("footer", [
+                _vm._v(
+                  "\n                        default footer\n                        "
+                ),
+                _c(
+                  "button",
+                  {
+                    staticClass: "modal-default-button",
+                    on: {
+                      click: function($event) {
+                        _vm.$emit("close")
+                      }
+                    }
+                  },
+                  [
+                    _vm._v(
+                      "\n                        OK\n                      "
+                    )
+                  ]
+                )
+              ])
+            ],
+            2
+          )
+        ])
+      ])
+    ])
+  ])
+}
+var staticRenderFns = []
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-6c5acdc2", module.exports)
+  }
+}
 
 /***/ })
 /******/ ]);

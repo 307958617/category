@@ -6,7 +6,8 @@
                     <div class="card-header">添加根分类</div>
                     <div class="card-body">
                         <input class="form-control" type="text" v-model="newCategory" @keyup.enter="addCategory()">
-                        <button class="btn btn-success btn-sm">是最小的吗</button>
+                        <br>
+                        <button class="btn btn-success btn-block">更新设置</button>
                     </div>
                 </div>
             </div>
@@ -17,8 +18,9 @@
                     <div class="card-body">
                         <ul class="list-group">
                             <!--<li class="list-group-item" v-for="category in categories">{{ category.name }}</li>-->
-                            <!--用这个循环组件替换上面这个<li>-->
-                            <category-tree v-for="category in categories" :key="category.id" :category="category"></category-tree>
+                            <!--用这个循环组件替换上面这个<li>，-->
+                            <!--category-tree这组件里面可以用this.$emit('getCategories');来调用本父组件的getCategories方法-->
+                            <category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
                         </ul>
                     </div>
                 </div>

@@ -44,6 +44,17 @@ class CategoryController extends Controller
        Category::create(['name' => $request->input('name')]);
     }
 
+    public function addChildCategory(Request $request)
+    {
+        $request->validate([   //验证数据
+            'name' => 'required|unique:categories',
+        ]);
+        $category = Category::create(['name' =>$request->input('name')]);
+        //将上面添加的节点设置一个父节点
+        $category->parent_id = $request->input('parentId');
+        $category->save();
+    }
+
     /**
      * Display the specified resource.
      *
@@ -75,7 +86,12 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category)
     {
-        //
+        $request->validate([   //验证数据
+            'name' => 'required|unique:categories',
+        ]);
+        //这里可以不用写$category = Category::find($request->input('id'));
+        $category->name = $request->input('name');
+        $category->save();
     }
 
     /**
