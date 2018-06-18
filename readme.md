@@ -646,7 +646,7 @@
 #### ②、实现 编辑分类 功能：
 ##### 步骤1：找到分类列表存在的按钮组，并向其中添加一个 编辑分类 按钮：
     <button type="button" class="btn btn-primary" @click="showModel=true">编辑分类</button>
-### ！！那么问题出来了！！如何使编辑分类也复用什么的模态框呢？
+### ！！那么问题出来了！！如何使编辑分类也复用上面创建的模态框呢？
 ##### 步骤2：修改CategoryTree.vue，将实现增加分类和编辑分类的模态框复用：
 ###### 首先、在data里面添加编辑模态框需要的数据：
     editCategory:this.category.name,//给编辑的输入框绑定的
