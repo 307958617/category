@@ -48063,7 +48063,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     props: ['category'],
     data: function data() {
         return {
-            canDeleteCategory: false, //判断是否显示删除按钮
             newCategory: '', //给新增的输入框绑定的
             editCategory: this.category.name, //给编辑的输入框绑定的
             showOptions: false, //用来判断是否显示按钮组
@@ -48075,9 +48074,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         };
     },
-    mounted: function mounted() {
-        this.getCategories();
-    },
 
     methods: {
         addChildCategory: function addChildCategory() {
@@ -48088,7 +48084,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             axios.post('/category/addChildCategory', { parentId: this.category.id, name: this.newCategory }).then(function (res) {
                 _this.newCategory = '';
                 _this.showModel = false;
-                _this.canDeleteCategory = false;
                 //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
                 //<category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
                 _this.getCategories();
@@ -48122,18 +48117,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             });
         },
         getCategories: function getCategories() {
-            var _this4 = this;
-
             //必须增加这个方法与父组件的名称一样这很重要，本组件递归调用才不会报错
             this.$emit('getCategories');
-            //判断当前节点是否有子节点
-            axios.get('/category/' + this.category.id).then(function (res) {
-                if (res.data.children === 0) {
-                    _this4.canDeleteCategory = true;
-                }
-            }).catch(function (error) {
-                throw error;
-            });
         },
         openModel: function openModel(type) {
             this.showModel = true; //每次都要显示出模态框
@@ -48439,7 +48424,7 @@ var render = function() {
                   [_vm._v("编辑分类")]
                 ),
                 _vm._v(" "),
-                _vm.canDeleteCategory
+                _vm.category.children.length === 0
                   ? _c(
                       "button",
                       {

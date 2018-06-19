@@ -731,33 +731,6 @@
          */
         $category->delete();
     }
-#### ④、实现如果这个节点下面有子节点，就让上面的删除按钮不显示出来：(后来发现一个问题，就时删除子分类后，会报错。但是不影响功能。)
-##### 首先、在data里面添加一个参数：
-    canDeleteCategory:false,//判断是否显示删除按钮
-##### 其次、添加判断是否显示删除按钮：
-    <!--添加判断是否显示删除按钮v-if="canDeleteCategory"-->
-    <button type="button" class="btn btn-danger" @click="deleteCategory" v-if="canDeleteCategory">删除分类</button>
-##### 然后、再修改getCategories() 方法
-    getCategories() { //必须增加这个方法与父组件的名称一样这很重要，本组件递归调用才不会报错
-        this.$emit('getCategories');
-        //判断当前节点是否有子节点，这个借用资源路由的get方法对于控制器里面的show方法
-        axios.get('/category/'+this.category.id).then(res=>{
-            if(res.data.children === 0) {
-                this.canDeleteCategory = true;
-            }
-        }).catch(error=> {
-            throw error
-        });
-    },
-##### 再然后，不要忘记将getCategories()放到mounted()里面，实现页面加载时就要实现
-    mounted() {
-        this.getCategories()
-    },
-##### 同时，还不要忘记在addChildCategory()方法里面添加一句代码，不然在添加子类后刷新之前任然是可以删除的。
-    this.canDeleteCategory = false;
-##### 再再然后，利用CategoryController里面的show()方法，来返回子节点的数量
-    public function show(Category $category)
-    {
-        $children = $category->children;
-        return response()->json(['children'=>count($children)]);
-    }
+#### ④、实现如果这个节点下面有子节点，就让上面的删除按钮不显示出来：
+    <!--添加判断是否显示删除按钮v-if="category.children.length===0"-->
+    <button type="button" class="btn btn-danger" @click="deleteCategory" v-if="category.children.length===0">删除分类</button>
