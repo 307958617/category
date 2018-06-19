@@ -734,3 +734,308 @@
 #### ④、实现如果这个节点下面有子节点，就让上面的删除按钮不显示出来：
     <!--添加判断是否显示删除按钮v-if="category.children.length===0"-->
     <button type="button" class="btn btn-danger" @click="deleteCategory" v-if="category.children.length===0">删除分类</button>
+#### ⑤、实现点击分类列表左边的三角箭头，隐藏和显示子分类：
+##### 首先、增加一个三角箭头图标，并添加一个点击方法toggleShowChildren来切换显示状态，不要忘记引入font-awesome3.0
+    <h6>
+        <!--增加一个三角箭头图标，并添加一个点击方法toggleShowChildren来切换显示状态。不要忘记引入font-awesome3.0-->
+        <span @click="toggleShowChildren" :class="showChildren ? 'icon-caret-down' :'icon-caret-right'"></span>
+        {{ category.name }}
+    </h6>
+##### 然后、到data数据里面添加showChildren属性：
+    showChildren:false,//判断是否显示分类下面的子分类
+##### 再然后、给三角箭头一个点击方法，toggleShowChildren(),具体方法如下：
+    toggleShowChildren() {
+        this.showChildren = true;
+    }
+##### 最后、给子列表添加显示属性v-if="showChildren"
+    <!--添加是否显示子列表的控制v-if="showChildren"-->
+    <ul v-if="showChildren" class="list-group child-group" >
+        <category-tree @getCategories="getCategories" v-for="category in category.children" :key="category.id" :category="category"></category-tree>
+    </ul>
+##### 最最后、不要忘记给添加子分类的方法里面添加一个显示所有子列表，才能及时显示添加的分类：
+    
+#### ⑥、实现点击展开所有和点击折叠所有分类列表框：
+##### 首先、在CategoryComponent.vue这个父组件添加一个按钮实现和展开，折叠：
+    <div class="card-header">
+        分类列表
+        <span class=" pull-right">
+            <button class="btn btn-sm " :class="[showChildren ? 'btn-danger' : 'btn-success']" @click="toggleShowChildren()">{{ showChildren ? '折叠所有' : '展开所有'}}</button>
+        </span>
+    </div>
+##### 然后、给data属性里面添加属性：showChildren=false；
+    showChildren:false //表示是否显示子列表
+##### 再然后、给添加的按钮增加一个方法切换显示：
+    toggleShowChildren() {
+        this.showChildren = !this.showChildren
+    }
+#### ！！问题来了，如何将这个父组件里面的showChildren属性传递给根组件CategoryTree.vue呢？
+### ！！注意：这里涉及到了一个问题：如何在Vue2中实现组件props双向绑定，原文详解点[击此处](https://www.cnblogs.com/xxcanghai/p/6124699.html)
+##### 第一步：直接在子组件CategoryTree.vue里面引入propsync.js文件,该文件内容如下：
+> import propsync from '../../propsync' //引入mixin文件
+
+    /**
+     * =================说明==================
+     * propsync：vue组件的混合对象，主要用于组件编写时混入调用。
+     *
+     * 【主要功能】
+     * 1、实现了在组件内自动创建所有prop对应的data属性，方便组件内修改prop使用。解决了vue2.0中不允许组件内直接修改prop的设计。
+     * 2、实现了组件外修改组件prop，组件内自动同步修改到data属性。
+     * 3、实现了组件内修改了data属性（由prop创建的），自动向组件外发出事件通知有内部prop修改。由组件外决定是否要将修改同步到组件外
+     *
+     * 【使用方法】
+     * 1、编写组件：在选项对象中增加 mixins:[propsync]即可，无需其他修改
+     * 2、调用组件：在调用组件的templat处，增加一个事件监听 onPropsChange（可修改）,当组件内修改了props时会调用此函数，返回 修改prop名称，修改后值，修改前值
+     *
+     * 调用组件例：
+     * <mycomponent :prop1="xxx" :prop2="xxx" @onPropsChange="change"></mycomponent>
+     *
+     * {
+     *   methods:{
+     *     change:function(propName,newVal,oldVal){
+     *       this[propName]=newVal;
+     *       console.log("组件mycomponent的" +propName+ "属性由" +oldVal+ "修改为了" +newVal);
+     *     }
+     *   }
+     * }
+     *
+     * 【可配置忽略】
+     * 默认情况下，调用了本mixin的组件，会实现组件定义的所有的props，创建对应data变量，绑定双向watch。
+     * 若希望某个props不进行绑定（如仅纯展示型props），则可在那个props中增加propsync:false(可配置)来忽略，默认所有props均为true
+     * 例：
+     * props:{
+     *   xxx:{
+     *     type: String,
+     *     default: "xxx",
+     *     propsync: false//增加此props的属性，则本mixin会忽略xxx
+     *   }
+     * }
+     */
+    /**
+     * 【配置】
+     * 当在组件内部修改了prop属性，对外emit发出的事件名称
+     */
+    const emitPropsChangeName = "onPropsChange";
+    /**
+     * 【配置】
+     * 可在组件属性中定义当前props是否参加本mixin实现双向绑定。
+     */
+    const isEnableName = "propsync";
+    /**
+     * 【配置】
+     * 根据prop的名称生成对应的data属性名，可自行修改生成后的名称。
+     * 默认为在prop属性名前面增加"p_"，即若prop中有字段名为"active"，则自动生成名为"p_active"的data字段
+     *
+     * @param {string} propName 组件prop字段名称
+     * @returns {string} 返回生成的data字段名
+     */
+    function getDataName(propName) {
+        //注意：映射后名称不能以 $ 或 _ 开头，会被vue认定为内部属性！！
+        return "p_" + propName;
+    }
+    export default {
+        //修改data，自动生成props对应的data字段
+        data: function () {
+            var data = {};
+            var that = this;
+            /** 所有组件定义的props名称数组 */
+            var propsKeys = Object.keys((that.$options.props) || {});
+            propsKeys.forEach(function (prop, i) {
+                var dataName = getDataName(prop);
+                var isEnable = that.$options.props[prop][isEnableName];
+                isEnable = (typeof isEnable === "boolean") ? isEnable : true;
+                if (!isEnable)
+                    return;
+                //若使用mixins方法导入本代码，则本函数会 先于 组件内data函数执行！
+                data[dataName] = that[prop];
+            });
+            return data;
+        },
+        created: function () {
+            var that = this;
+            /** 所有 取消props的watch监听函数 的数组 */
+            var unwatchPropsFnArr = [];
+            /** 所有 取消data的watch监听函数 的数组 */
+            var unwatchDataFnArr = [];
+            /** 所有组件定义的props名称数组 */
+            var propsKeys = Object.keys((that.$options.props) || {});
+            propsKeys.forEach(function (prop, i) {
+                var dataName = getDataName(prop);
+                var isEnable = that.$options.props[prop][isEnableName];
+                isEnable = (typeof isEnable === "boolean") ? isEnable : true;
+                if (!isEnable)
+                    return;
+                //监听所有props属性
+                var propsFn = that.$watch(prop, function (newVal, oldVal) {
+                    that[dataName] = newVal; //将组件外变更的prop同步到组件内的p_prop变量中
+                }, {});
+                unwatchPropsFnArr.push(propsFn);
+                //[监听所有属性映射到组件内的变量]
+                var dataFn = that.$watch(dataName, function (newVal, oldVal) {
+                    that.$emit(emitPropsChangeName, prop, newVal, oldVal); //将组件内p_prop通知给组件外(调用方)
+                }, {});
+                unwatchDataFnArr.push(dataFn);
+            });
+        },
+        destroyed: function () {
+    
+        }
+    };
+##### 第二步：声明使用propsync的mixin
+    mixins: [propsync],//声明使用propsync的mixin
+##### 第三步：到父组件CategoryComponent里面组件<category-tree></category-tree>添@onPropsChange="change":
+    <category-tree :showChild="showChildren" @onPropsChange="change" @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
+##### 第四步：添加change()方法：
+    change(propName,newVal,oldVal) {
+        this[propName]=newVal;
+    }
+##### 第五步：到子组件里面添加方法：setShowChild(),然后就可以在子组件里面直接使用'this.p_showChild'这个属性了。
+    setShowChild(page, index, e) {
+        this.p_showChild = index;//可以直接使用this.p_showChild
+    }
+##### 具体变化后的CategoryTree.vue组件内容为：
+    <template>
+        <div>
+            <!--增加@mouseover和@mouseleave两个事件，来触发按钮组是否显示-->
+            <li class="list-group-item" @mouseover="showOptions=true" @mouseleave="showOptions=false">
+                <h6>
+                    <!--增加一个三角箭头图标，并添加一个点击方法toggleShowChildren来切换显示状态。不要忘记引入font-awesome3.0-->
+                    <span @click="toggleShowChildren" :class="this.p_showChild ? 'icon-caret-down' :'icon-caret-right'"></span>
+                    {{ category.name }}
+                </h6>
+                <!--注意，bootstrap4之后，btn没有btn-xs了，只有自己定制了-->
+                <!--为按钮组添加v-if判断，来判断是否显示按钮组-->
+                <div class="btn-group btn-group-sm" v-if="showOptions">
+                    <!--给按钮添加一个方法用来显示添加分类模态框的-->
+                    <button type="button" class="btn btn-success" @click="openModel('add')">增加子类</button>
+                    <!--给按钮添加一个方法用来显示编辑分类模态框的-->
+                    <button type="button" class="btn btn-primary" @click="openModel('edit')">编辑分类</button>
+                    <!--给按钮添加一个方法直接删除当前分类及该分类下的所有子类-->
+                    <!--添加判断是否显示删除按钮v-if="category.children.length===0"-->
+                    <button type="button" class="btn btn-danger" @click="deleteCategory" v-if="category.children.length===0">删除分类</button>
+                </div>
+            </li>
+            <!--注意，这里将<li>与<ul>隔开，就是为了显示在下面-->
+            <!--添加是否显示子列表的控制v-if="showChildren"-->
+            <ul v-if="this.p_showChild" class="list-group child-group" >
+                <!--注意，调用本身组件，需要到app.js里面注册，注意下面的category.children-->
+                <!--同时这里也不要忘记添加方法@getCategories="getCategories"-->
+                <category-tree @getCategories="getCategories" v-for="category in category.children" :key="category.id" :category="category"></category-tree>
+            </ul>
+            <!--引入模态框，并控制显示与否，并根据不同情况显示不同的solt-->
+            <category-model v-if="showModel">
+                <!--根据不同情况显示不同的头部信息-->
+                <h3 slot="header">给"{{ category.name }}"{{ modal.headerDescription }}</h3>
+                <!--实现增加分类-->
+                <input v-if="modal.vModel === 'newCategory'" class="form-control" slot="body" type="text" v-model="newCategory" >
+                <button v-if="modal.method === 'addChildCategory'" class="btn btn-sm btn-success" slot="footer" @click="addChildCategory">保存</button>
+                <!--实现编辑分类-->
+                <input v-if="modal.vModel === 'editCategory'" class="form-control" slot="body" type="text" v-model="editCategory" >
+                <button v-if="modal.method === 'updateCategory'" class="btn btn-sm btn-success" slot="footer" @click="updateCategory">保存</button>
+                <!--实现点击取消按钮，隐藏模态框-->
+                <button class="btn btn-sm btn-default" slot="footer" @click="showModel=false">取消</button>
+            </category-model>
+        </div>
+    </template>
+    <!--设置分类列表的显示样式-->
+    <style lang="scss">
+        .list-group-item {
+            height: 5em;  //定义各个节点显示列表的高度
+            border-left: 3px solid #ff9b44; //定义根节点显示列表左边框的宽度和颜色
+        }
+        .child-group {
+            margin-left: 4em;  //定义子节点显示列表左边框的距离，体现出层级来
+            li.list-group-item {
+                border-left-color: #e3ff60; //定义子节点显示列表左边框的宽度和颜色
+            }
+        }
+    </style>
+    
+    <script>
+        import CategoryModel from './CategoryModel.vue' //引入模态框
+        import propsync from '../../propsync' //引入mixin文件
+        export default {
+            mixins: [propsync],//声明使用propsync的mixin
+            components:{
+                'category-model':CategoryModel
+            },
+            props: ['category','showChild'],
+            data() {
+                return {
+                    newCategory:'',//给新增的输入框绑定的
+                    editCategory:this.category.name,//给编辑的输入框绑定的
+                    showOptions: false, //用来判断是否显示按钮组
+                    showModel: false, //用来判断是否显示模态框
+                    modal:{  //定义模态框需要的数据
+                        headerDescription:'',//表示模态框头部显示的信息
+                        vModel:'',//表示模态框的绑定数据是什么
+                        method:''// 表示模态框里面的提交数据的方法是什么
+                    }
+                }
+            },
+            methods:{
+                addChildCategory() {  //提交新添加的分类到数据
+                    //这需要创建新的路由，并创建新的方法用来保存新的子分类
+                    axios.post('/category/addChildCategory',{parentId:this.category.id,name:this.newCategory}).then(res=>{
+                        this.newCategory = '';
+                        this.showModel = false;
+                        this.p_showChild = true;
+                        //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
+                        //<category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
+                        this.getCategories();
+                    }).catch(error=> {
+                        throw error
+                    });
+                },
+                deleteCategory() {
+                    //这里使用资源路由即可注意是delete方法对编辑应控制器里面的destroy方法即可
+                    axios.delete('/category/'+this.category.id).then(res=>{
+                        //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
+                        this.getCategories();
+                    }).catch(error=> {
+                        throw error
+                    });
+                },
+                updateCategory() {
+                    //这里使用资源路由即可注意是put方法对编辑应控制器里面的update方法即可
+                    axios.put('/category/'+this.category.id,{name:this.editCategory}).then(res=>{
+                        this.showModel = false;
+                        //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
+                        this.getCategories();
+                        //this.editCategory = this.category.name;必须放到this.getCategories();的后面，从才能显示出修改后的名称。
+                        this.editCategory = this.category.name;
+                    }).catch(error=> {
+                        throw error
+                    });
+                },
+                getCategories() { //必须增加这个方法与父组件的名称一样这很重要，本组件递归调用才不会报错
+                    this.$emit('getCategories');
+                },
+                openModel(type) {
+                    this.showModel=true;//每次都要显示出模态框
+                    switch(type) {
+                        case 'add':
+                            this.modal = {
+                                headerDescription:'增加子分类',
+                                vModel:'newCategory',
+                                method:'addChildCategory'
+                            };
+                            break;
+                        case 'edit':
+                            this.modal = {
+                                headerDescription:'修改分类名称',
+                                vModel:'editCategory',
+                                method:'updateCategory'
+                            };
+                            break;
+                        default:
+                    }
+                },
+                toggleShowChildren() {
+                    this.p_showChild = !this.p_showChild;
+                },
+                setShowChild(page, index, e) {
+                    this.p_showChild = index;//可以直接使用this.p_showChild
+                }
+            }
+        }
+    </script>

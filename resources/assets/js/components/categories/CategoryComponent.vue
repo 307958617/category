@@ -13,14 +13,19 @@
             </div>
             <div class="col-md-8">
                 <div class="card card-default">
-                    <div class="card-header">分类列表</div>
+                    <div class="card-header">
+                        分类列表
+                        <span class=" pull-right">
+                            <button class="btn btn-sm " :class="[showChildren ? 'btn-danger' : 'btn-success']" @click="toggleShowChildren()">{{ showChildren ? '折叠所有' : '展开所有'}}</button>
+                        </span>
+                    </div>
 
                     <div class="card-body">
                         <ul class="list-group">
                             <!--<li class="list-group-item" v-for="category in categories">{{ category.name }}</li>-->
                             <!--用这个循环组件替换上面这个<li>，-->
                             <!--category-tree这组件里面可以用this.$emit('getCategories');来调用本父组件的getCategories方法-->
-                            <category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
+                            <category-tree :showChild="showChildren" @onPropsChange="change" @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
                         </ul>
                     </div>
                 </div>
@@ -41,7 +46,8 @@
         data() {
             return {
                 categories:[],
-                newCategory:''
+                newCategory:'',
+                showChildren:false //表示是否显示子列表
             }
         },
         methods: {
@@ -59,6 +65,12 @@
                 }).catch(error=> {
                     throw error
                 })
+            },
+            toggleShowChildren() {
+                this.showChildren = !this.showChildren
+            },
+            change(propName,newVal,oldVal) {
+                this[propName]=newVal;
             }
         }
     }

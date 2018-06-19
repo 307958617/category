@@ -2,7 +2,11 @@
     <div>
         <!--增加@mouseover和@mouseleave两个事件，来触发按钮组是否显示-->
         <li class="list-group-item" @mouseover="showOptions=true" @mouseleave="showOptions=false">
-            <h6>{{ category.name }}</h6>
+            <h6>
+                <!--增加一个三角箭头图标，并添加一个点击方法toggleShowChildren来切换显示状态。不要忘记引入font-awesome3.0-->
+                <span @click="toggleShowChildren" :class="this.p_showChild ? 'icon-caret-down' :'icon-caret-right'"></span>
+                {{ category.name }}
+            </h6>
             <!--注意，bootstrap4之后，btn没有btn-xs了，只有自己定制了-->
             <!--为按钮组添加v-if判断，来判断是否显示按钮组-->
             <div class="btn-group btn-group-sm" v-if="showOptions">
@@ -16,7 +20,8 @@
             </div>
         </li>
         <!--注意，这里将<li>与<ul>隔开，就是为了显示在下面-->
-        <ul class="list-group child-group" >
+        <!--添加是否显示子列表的控制v-if="showChildren"-->
+        <ul v-if="this.p_showChild" class="list-group child-group" >
             <!--注意，调用本身组件，需要到app.js里面注册，注意下面的category.children-->
             <!--同时这里也不要忘记添加方法@getCategories="getCategories"-->
             <category-tree @getCategories="getCategories" v-for="category in category.children" :key="category.id" :category="category"></category-tree>
@@ -52,11 +57,13 @@
 
 <script>
     import CategoryModel from './CategoryModel.vue' //引入模态框
+    import propsync from '../../propsync' //引入mixin文件
     export default {
+        mixins: [propsync],//声明使用propsync的mixin
         components:{
             'category-model':CategoryModel
         },
-        props: ['category'],
+        props: ['category','showChild'],
         data() {
             return {
                 newCategory:'',//给新增的输入框绑定的
@@ -76,6 +83,7 @@
                 axios.post('/category/addChildCategory',{parentId:this.category.id,name:this.newCategory}).then(res=>{
                     this.newCategory = '';
                     this.showModel = false;
+                    this.p_showChild = true;
                     //调用父组件的方法，实现添加新分类后马上显示出来，但是不要忘记到父组件里面添加这个方法@getCategories="getCategories"
                     //<category-tree @getCategories="getCategories" v-for="category in categories" :key="category.id" :category="category"></category-tree>
                     this.getCategories();
@@ -126,6 +134,12 @@
                         break;
                     default:
                 }
+            },
+            toggleShowChildren() {
+                this.p_showChild = !this.p_showChild;
+            },
+            setShowChild(page, index, e) {
+                this.p_showChild = index;//可以直接使用this.p_showChild
             }
         }
     }
