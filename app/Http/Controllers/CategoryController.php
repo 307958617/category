@@ -63,7 +63,8 @@ class CategoryController extends Controller
      */
     public function show(Category $category)
     {
-        //
+        $children = $category->children;
+        return response()->json(['children'=>count($children)]);
     }
 
     /**
@@ -102,6 +103,17 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        //
+        /**
+         * 删掉一个节点：
+
+        $node->delete();
+
+        * **注意！**节点的所有后代将一并删除 注意！ 节点需要向模型一样删除，不能使用下面的语句来删除节点：
+
+        Category::where('id', '=', $id)->delete();
+         */
+        if(count($category->children) === 0) {
+            $category->delete();
+        }
     }
 }
